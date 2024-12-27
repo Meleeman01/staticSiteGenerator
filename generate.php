@@ -30,6 +30,56 @@ function sortLinks($links, $linkOrder = null) {
     }
     else return $links;
 }
+function processScripts($sourceDir, $scripts, $outputDir = './output') {
+    //create scripts output directory if it doesn't exist
+    if (!file_exists($outputDir."/scripts")) {
+        mkdir($outputDir."/scripts", 0777, true);
+    }
+    foreach ($scripts as $script) {
+        $sourceDir = $sourceDir.'scripts/';
+        echo "$sourceDir\n";
+        $outputDir = __DIR__.'/'.$outputDir.'/scripts';
+        echo "$outputDir\n";
+        echo $sourceDir . $script;
+        // Check if it's a file and not a directory
+        if (is_file($sourceDir . $script)) {
+            // Move the file to the destination directory
+            $success = copy($sourceDir . $script, $outputDir .'/'. $script);
+            if ($success) {
+                echo "File '$script' moved successfully.\n";
+            } else {
+                echo "Error moving file '$script'.\n";
+            }
+        }
+    }
+}
+
+function processFonts($sourceDir, $outputDir = './output') {
+    $fonts = array_filter(scandir($sourceDir,"fonts"), function($file){
+        return $file != '.' && $file != '..';
+    });
+    //create scripts output directory if it doesn't exist
+    if (!file_exists($outputDir."/fonts")) {
+        mkdir($outputDir."/fonts", 0777, true);
+    }
+    foreach ($fonts as $font) {
+        $sourceDir = $sourceDir.'scripts/';
+        echo "$sourceDir\n";
+        $outputDir = __DIR__.'/'.$outputDir.'/scripts';
+        echo "$outputDir\n";
+        echo $sourceDir . $font;
+        // Check if it's a file and not a directory
+        if (is_file($sourceDir . $font)) {
+            // Move the file to the destination directory
+            $success = copy($sourceDir . $font, $outputDir .'/'. $font);
+            if ($success) {
+                echo "File '$font' moved successfully.\n";
+            } else {
+                echo "Error moving file '$font'.\n";
+            }
+        }
+    }
+}
 
 function generateStaticSite($sourceDir, $outputDir = './output')
 {
@@ -51,6 +101,13 @@ function generateStaticSite($sourceDir, $outputDir = './output')
     $images = array_filter(scandir($sourceDir."images"), function($file) {
         return $file != '.' && $file != '..';
     });
+    $scripts = array_filter(scandir($sourceDir."scripts"), fn($file) => pathinfo($file, PATHINFO_EXTENSION) === 'js');
+
+    echo json_encode($scripts);
+    echo "\n\n";
+    processScripts($sourceDir,$scripts,$outputDir);
+
+
     $bodyFiles = array_filter(scandir($sourceDir), fn($file) => pathinfo($file, PATHINFO_EXTENSION) === 'md');
     
     // Create a new Parsedown instance
@@ -105,6 +162,12 @@ function generateStaticSite($sourceDir, $outputDir = './output')
         }
         $htmlLinks .= '</ul>';
 
+        $scriptTags="";
+        foreach($scripts as $script){
+            $scriptTags .= "<script src=\"scripts/$script\"></script>\n";
+        }
+
+        
         // Combine the sections into a complete HTML page
 
         /*
@@ -123,11 +186,12 @@ function generateStaticSite($sourceDir, $outputDir = './output')
                 <link rel="stylesheet" type="text/css" href="/main.css">
                 <title>$htmlBodyTitle</title>
             </head>
-            <body>
+            <body class="background-image">
                 $htmlHeader
                 $htmlLinks
                 $htmlBody
                 $htmlFooter
+                $scriptTags
             </body>
             </html>
             <!--do not edit below this line-->
@@ -157,7 +221,6 @@ function generateStaticSite($sourceDir, $outputDir = './output')
         if (is_file($sourceDir . $image)) {
             // Move the file to the destination directory
             $success = copy($sourceDir . $image, $outputDir .'/'. $image);
-
             if ($success) {
                 echo "File '$image' moved successfully.\n";
             } else {
